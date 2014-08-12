@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Dig!</title>
+    <script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="wrapper">
+    <div id="game"></div>
+</div>
+
+
+<script type="text/javascript">
+
+    var game = new Phaser.Game(1024, 768, Phaser.AUTO, 'game', { preload: preload, create: create, update: update, render: render });
+    var platforms;
+    var player;
+    var cursors;
+
+    var blockSize = 140;
+
+    var blocks;
+
+    var emitters = [];
+
+    function preload() {
+        game.load.image('background', 'assets/background.jpg');
+        game.load.spritesheet('dirt', 'assets/dirt.png', 140, 140);
+        game.load.spritesheet('worm', 'assets/worm.png', 43, 61);
+        game.load.image('debris-1', 'assets/Debris/debrisWood_1.png');
+        game.load.image('debris-2', 'assets/Debris/debrisWood_2.png');
+        game.load.image('debris-3', 'assets/Debris/debrisWood_3.png');
+    }
+
+    function create() {
+        game.physics.startSystem(Phaser.Physics.ARCADE);
+
+        game.world.setBounds(-2000, -2000, 4000, 2000); //(x, y, width, height)
+
+        game.add.tileSprite(-2000, -2000, 4000, 2000, 'background'); //(x, y, width, height)
+
+        // add player
+        player = game.add.sprite(0, -100, 'worm');
+        game.physics.enable(player, Phaser.Physics.ARCADE);
+        player.body.collideWorldBounds = true;
+
+        player.animations.add('idle', [0, 1, 2, 3, 4], 10, true);
+        player.animations.add('dig', [3], 10, true);
+
+        player.experience = 0;
+        player.power = 1;
+
+        game.camera.follow(player);
+
+        // create blocks
+        blocks = game.add.group();
+        blocks.enableBody = true;
+        blocks.physicsBodyType = Phaser.Physics.ARCADE;
+
+        for (var i = 0; i < 30; i++) {
+            for (var j = 0; j < 30; j++) {
+                var block = blocks.create(blockSize * i - 2000, -4 * blockSize - j * blockSize, 'dirt');
+                block.body.immovable = true;
+
+                var emitter = game.add.emitter(block.body.x + 70, block.body.y + 70, 6);
+                emitter.width = 120;
+                emitter.height = 120;
+                emitter.makeParticles(['debris-1', 'debris-2', 'debris-3']);
+                block.emitter = emitter;
+                emitters.push(emitter);
+
+                block.maxHealth = 100;
+                block.health = 100;
+            }
+        }
+
+    }
+
+    function update() {
+        player.animations.play('idle');
+
+        game.physics.arcade.collide(player, blocks, hitBlock, null, this);
+
+        if (game.input.mousePointer.isDown) {
+            game.physics.arcade.moveToPointer(player, 400);
+            if (Phaser.Rectangle.contains(player.body, game.input.x, game.input.y)) {
+                player.body.velocity.setTo(0, 0);
+            }
+        } else {
+            player.body.velocity.setTo(0, 0);
+        }
+
+        emitters.forEach(function (emitter) {
+            emitter.forEachAlive(function(particle) {
+                var fractionDone = particle.lifespan / emitter.lifespan;
+                if (fractionDone < 0.5) {
+                    particle.alpha = particle.lifespan / emitter.lifespan;
+                } else {
+                    particle.alpha = 1;
+                }
+            });
+        });
+    }
+
+    function hitBlock(player, block) {
+        player.animations.play('dig');
+
+        block.health -= player.power;
+
+        if (block.health / block.maxHealth > 0.66 ) {
+            block.frame = 0;
+        } else if (block.health / block.maxHealth > 0.33) {
+            block.frame = 1;
+        } else {
+            block.frame = 2;
+        }
+
+        if (block.health <= 0) {
+            block.emitter.start(false, 1000, 5, 10);
+            block.kill();
+
+            player.experience = player.experience + block.maxHealth;
+        }
+    }
+
+    function render() {
+    }
+
+</script>
+
+</body>
+</html>
