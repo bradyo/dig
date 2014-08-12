@@ -29,6 +29,11 @@
     var blocks;
 
     var emitters = [];
+    var thudSound;
+    var boomSound;
+    var levelSound;
+
+    var thudPlaying = false;
 
     function preload() {
         game.load.image('background', 'assets/background.jpg');
@@ -37,6 +42,10 @@
         game.load.image('debris-1', 'assets/Debris/debrisWood_1.png');
         game.load.image('debris-2', 'assets/Debris/debrisWood_2.png');
         game.load.image('debris-3', 'assets/Debris/debrisWood_3.png');
+
+        game.load.audio('boom', 'assets/sound/boom.wav');
+        game.load.audio('thud', 'assets/sound/thud.mp3');
+        game.load.audio('level', 'assets/sound/level-up.mp3');
     }
 
     function create() {
@@ -54,8 +63,9 @@
         player.animations.add('idle', [0, 1, 2, 3, 4], 10, true);
         player.animations.add('dig', [3], 10, true);
 
+        player.level = 1;
         player.experience = 0;
-        player.power = 1;
+        player.power = 2;
 
         game.camera.follow(player);
 
@@ -81,6 +91,10 @@
             }
         }
 
+        // create sounds
+        thudSound = game.add.audio('thud', 0.5);
+        boomSound = game.add.audio('boom');
+        levelSound = game.add.audio('level');
     }
 
     function update() {
@@ -126,7 +140,29 @@
             block.emitter.start(false, 1000, 5, 10);
             block.kill();
 
+            boomSound.play();
+
             player.experience = player.experience + block.maxHealth;
+        } else {
+            if (thudPlaying == false) {
+                thudSound.play();
+                setTimeout(function( ){
+                    thudPlaying = false;
+                }, 500);
+                thudPlaying = true;
+            }
+        }
+
+        if (player.experience > 1000) {
+            player.experience = 0;
+            player.level = player.level + 1;
+
+            player.power = player.power + 1;
+
+            var scale = 1 + player.level * 0.05;
+            game.add.tween(player.scale).to( { x: scale, y: scale }, 1000, Phaser.Easing.Linear.None, true, 0, 0, false);
+
+            levelSound.play();
         }
     }
 
