@@ -3,17 +3,115 @@
 <head>
     <meta charset="UTF-8" />
     <title>Dig!</title>
+    <link href='http://fonts.googleapis.com/css?family=Ubuntu+Condensed' rel='stylesheet' type='text/css'>
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
     <script type="text/javascript" src="js/phaser.min.js"></script>
     <style type="text/css">
         body {
             margin: 0;
         }
+        #game-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+        #game-overlay {
+            position: absolute;
+            bottom: 0px;
+            width: 1024px;
+            height: 80px;
+
+        }
+        #overlay-left {
+            float: left;
+            width: 40%;
+        }
+        #overlay-middle {
+            float: left;
+            width: 20%;
+        }
+        #middle-contents {
+            width: 140px;
+            height: 80px;
+            margin: 0 auto;
+            background-image: url("assets/masthead.png");
+            background-repeat:no-repeat;
+            background-size: 140px 140px;
+            background-position: center top;
+        }
+        #level {
+            font-family: 'Ubuntu Condensed', sans-serif;
+            font-weight: bold;
+            color: white;
+            padding-top: 10px;
+            height: 80px;
+            line-height: 80px;
+            font-size: 2em;
+            text-align: center;
+            width: 140px;
+        }
+        #overlay-right {
+            float: left;
+            width: 40%;
+        }
+        .progress-bar {
+            background-color: #1a1a1a;
+            height: 25px;
+            padding: 2px;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px #000 inset, 0 1px 0 #444;
+        }
+
+        .progress-bar span {
+            display: inline-block;
+            height: 100%;
+            border-radius: 3px;
+            box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset;
+            transition: width .4s ease-in-out;
+        }
+        .blue span {
+            background-color: #34c2e3;
+        }
+        .orange span {
+            background-color: #fecf23;
+            background-image: linear-gradient(top, #fecf23, #fd9215);
+        }
+        .green span {
+            background-color: #a5df41;
+            background-image: linear-gradient(top, #a5df41, #4ca916);
+        }
+        .stripes span {
+            background-size: 30px 30px;
+            background-image: linear-gradient(135deg, rgba(255, 255, 255, .15) 25%, transparent 25%,
+            transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%,
+            transparent 75%, transparent);
+            animation: animate-stripes 3s linear infinite;
+        }
+        @keyframes animate-stripes {
+            0% {background-position: 0 0;} 100% {background-position: 60px 0;}
+        }
     </style>
 </head>
 <body>
 
-<div id="wrapper">
+<div id="game-wrapper">
     <div id="game"></div>
+    <div id="game-overlay">
+        <div id="overlay-left">
+            <div class="progress-bar blue" style="width: 420px; margin-top: 40px; margin-left: 10px;">
+                <span id="experience-bar" style="width: 0%"></span>
+            </div>
+        </div>
+        <div id="overlay-middle">
+            <div id="middle-contents">
+                <div id="level">1</div>
+            </div>
+        </div>
+        <div id="overlay-right">
+            <div class="progress-bar orange" style="width: 420px; margin-top: 40px; margin-left: -24px;">
+                <span id="energy-bar" style="width: 100%"></span>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -79,7 +177,7 @@
                 var block = blocks.create(blockSize * i - 2000, -4 * blockSize - j * blockSize, 'dirt');
                 block.body.immovable = true;
 
-                var emitter = game.add.emitter(block.body.x + 70, block.body.y + 70, 6);
+                var emitter = game.add.emitter(block.body.x + 70, block.body.y + 70, 8);
                 emitter.width = 120;
                 emitter.height = 120;
                 emitter.makeParticles(['debris-1', 'debris-2', 'debris-3']);
@@ -142,7 +240,10 @@
 
             boomSound.play();
 
+
             player.experience = player.experience + block.maxHealth;
+            $('#experience-bar').attr("style", "width: " + (player.experience / 10) + "%");
+
         } else {
             if (thudPlaying == false) {
                 thudSound.play();
@@ -163,6 +264,9 @@
             game.add.tween(player.scale).to( { x: scale, y: scale }, 1000, Phaser.Easing.Linear.None, true, 0, 0, false);
 
             levelSound.play();
+
+            $('#experience-bar').attr("style", "width: 0%");
+            $('#level').html(player.level);
         }
     }
 
